@@ -14,12 +14,14 @@ namespace FinanceManagement.Data
 
         public DbSet<Transaction> Transactions => Set<Transaction>();
 
+        public DbSet<Category> Categories => Set<Category>();
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
             modelBuilder.Entity<Transaction>()
-                .Property(t => t.Amount)
+                .Property(t => t.Amount) 
                 .HasPrecision(18, 2);
         }
     }
