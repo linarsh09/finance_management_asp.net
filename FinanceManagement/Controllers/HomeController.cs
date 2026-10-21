@@ -107,12 +107,17 @@ namespace FinanceManagement.Controllers
         {
             var userId = _userManager.GetUserId(User);
 
+            if (userId is null)
+            {
+                return Challenge();
+            }
+
             var accounts = await _context.Accounts
                 .Where(a => a.UserId == userId)
+                .OrderBy(a => a.Name)
                 .ToListAsync();
 
-            ViewBag.AccountCount = accounts.Count;
-            return View();
+            return View(accounts);
         }
 
         public IActionResult Privacy()
