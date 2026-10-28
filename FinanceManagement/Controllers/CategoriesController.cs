@@ -3,6 +3,7 @@ using FinanceManagement.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace FinanceManagement.Controllers;
 
@@ -16,6 +17,24 @@ public class CategoriesController : Controller
     {
         _context = context;
         _userManager = userManager;
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> Index()
+    {
+        var userId = _userManager.GetUserId(User);
+
+        if (userId is null)
+        {
+            return Challenge();
+        }
+
+        var categories = await _context.Categories
+            .Where(c => c.UserId == userId)
+            .OrderBy(c => c.Name)
+            .ToListAsync();
+
+        return View(categories);
     }
 
     [HttpGet]
@@ -50,7 +69,7 @@ public class CategoriesController : Controller
         _context.Categories.Add(category);
         await _context.SaveChangesAsync();
 
-        return RedirectToAction("Index", "Home");
+        return RedirectToAction(nameof(Index));
     }
 
 }

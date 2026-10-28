@@ -1,0 +1,79 @@
+﻿@page "/register"
+@using System.ComponentModel.DataAnnotations
+@inject HttpClient Http
+@inject NavigationManager Navigation
+
+<h3>Регистрация</h3>
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div style="color: red; margin-bottom: 10px;">@errorMessage</div>
+}
+
+<EditForm Model="@registerModel" OnValidSubmit="HandleRegistration">
+    <DataAnnotationsValidator />
+
+    <div style="margin-bottom: 10px;">
+        <label>Email:</label><br />
+        <InputText @bind-Value="registerModel.Email" class="form-control" />
+        <ValidationMessage For="@(() => registerModel.Email)" />
+    </div>
+
+    <div style="margin-bottom: 10px;">
+        <label>Пароль:</label><br />
+        <InputText @bind-Value="registerModel.Password" type="password" class="form-control" />
+        <ValidationMessage For="@(() => registerModel.Password)" />
+    </div>
+
+    <button type="submit" disabled="@isSubmitting">
+        @(isSubmitting ? "Регистрация..." : "Зарегистрироваться")
+    </button>
+</EditForm>
+
+@code {
+    private RegisterDto registerModel = new();
+    private string? errorMessage;
+    private bool isSubmitting;
+
+    private async Task HandleRegistration()
+    {
+        isSubmitting = true;
+        errorMessage = null;
+
+        try
+        {
+            // Отправляем DTO на ваш контроллер
+            var response = await Http.PostAsJsonAsync("api/auth/register", registerModel);
+
+            if (response.IsSuccessStatusCode)
+            {
+                // Перенаправляем на страницу входа при успехе
+                Navigation.NavigateTo("/login");
+            }
+            else
+            {
+                errorMessage = "Ошибка при регистрации. Проверьте введенные данные.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Ошибка соединения: {ex.Message}";
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    // Простой record DTO прямо внутри файла или в отдельном классе
+    public record RegisterDto
+    {
+        [Required(ErrorMessage = "Введите Email")]
+        [EmailAddress(ErrorMessage = "Некорректный Email")]
+        public string Email { get; init; } = string.Empty;
+
+        [Required(ErrorMessage = "Введите пароль")]
+        [MinLength(6, ErrorMessage = "Пароль должен быть минимум 6 символов")]
+        public string Password { get; init; } = string.Empty;
+    }
+}

@@ -19,8 +19,6 @@ public class Account
     [Required]
     public string UserId { get; set; } = string.Empty;
 
-    public IdentityUser User { get; set; } = null!;
-
     public ICollection<Transaction> Transactions { get; set; }
     = new List<Transaction>();
 }

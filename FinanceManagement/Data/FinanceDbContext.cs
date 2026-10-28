@@ -1,10 +1,11 @@
 ﻿using FinanceManagement.Models;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using System.Reflection.Emit;
 
 namespace FinanceManagement.Data
 {
-    public class FinanceDbContext : IdentityDbContext
+    public class FinanceDbContext : DbContext
     {
         public FinanceDbContext(DbContextOptions<FinanceDbContext> options)
             : base(options)
@@ -15,6 +16,8 @@ namespace FinanceManagement.Data
         public DbSet<Transaction> Transactions => Set<Transaction>();
 
         public DbSet<Category> Categories => Set<Category>();
+
+        public DbSet<User> Users => Set<User>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
