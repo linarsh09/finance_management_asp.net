@@ -1,31 +1,20 @@
-﻿using FinanceManagement.Models;
-using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using FinanceManagement.Models;
 using Microsoft.EntityFrameworkCore;
-using System.Reflection.Emit;
-
-namespace FinanceManagement.Data
+namespace FinanceManagement.Data;
+public class FinanceDbContext : DbContext
 {
-    public class FinanceDbContext : DbContext
+    public FinanceDbContext(DbContextOptions<FinanceDbContext> options) : base(options) { }
+    public DbSet<Account> Accounts => Set<Account>();
+    public DbSet<Transaction> Transactions => Set<Transaction>();
+    public DbSet<Category> Categories => Set<Category>();
+    public DbSet<User> Users => Set<User>();
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        public FinanceDbContext(DbContextOptions<FinanceDbContext> options)
-            : base(options)
-        {
-        }
-        public DbSet<Account> Accounts => Set<Account>();
-
-        public DbSet<Transaction> Transactions => Set<Transaction>();
-
-        public DbSet<Category> Categories => Set<Category>();
-
-        public DbSet<User> Users => Set<User>();
-
-        protected override void OnModelCreating(ModelBuilder modelBuilder)
-        {
-            base.OnModelCreating(modelBuilder);
-
-            modelBuilder.Entity<Transaction>()
-                .Property(t => t.Amount) 
-                .HasPrecision(18, 2);
-        }
+        base.OnModelCreating(modelBuilder);
+        modelBuilder.Entity<Transaction>().Property(t => t.Amount).HasPrecision(18, 2);
+        modelBuilder.Entity<User>().HasIndex(u => u.Email).IsUnique();
+        modelBuilder.Entity<User>().HasIndex(u => u.Login).IsUnique();
+        modelBuilder.Entity<Account>().HasOne(a => a.User).WithMany(u => u.Accounts).HasForeignKey(a => a.UserId);
+        modelBuilder.Entity<Category>().HasOne(c => c.User).WithMany(u => u.Categories).HasForeignKey(c => c.UserId);
     }
 }

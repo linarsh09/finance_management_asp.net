@@ -18,6 +18,17 @@
     ViewData["Title"] = "Мои счета";
 }
 
+@if (TempData["SuccessMessage"] is string message)
+{
+    <div class="alert alert-success">@message</div>
+}
+
+<a asp-controller="Transactions"
+   asp-action="Create"
+   class="btn btn-success mb-3">
+    Добавить операцию
+</a> 
+
 <h1>Мои счета</h1>
 
 <p>Количество моих счетов: @Model.Count</p>

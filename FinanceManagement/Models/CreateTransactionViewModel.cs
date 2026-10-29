@@ -13,6 +13,7 @@ public class CreateTransactionViewModel
     public int CategoryId { get; set; }
 
     [Range(typeof(decimal), "0.01", "999999999.99",
+        ParseLimitsInInvariantCulture = true,
         ErrorMessage = "Введите сумму от 0,01 до 999 999 999,99")]
     [Display(Name = "Сумма")]
     public decimal Amount { get; set; }

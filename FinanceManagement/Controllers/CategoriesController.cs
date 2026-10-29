@@ -1,9 +1,9 @@
-﻿using FinanceManagement.Data;
+using FinanceManagement.Data;
 using FinanceManagement.Models;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace FinanceManagement.Controllers;
 
@@ -11,18 +11,17 @@ namespace FinanceManagement.Controllers;
 public class CategoriesController : Controller
 {
     private readonly FinanceDbContext _context;
-    private readonly UserManager<IdentityUser> _userManager;
+    
 
-    public CategoriesController(FinanceDbContext context, UserManager<IdentityUser> userManager)
+    public CategoriesController(FinanceDbContext context)
     {
         _context = context;
-        _userManager = userManager;
     }
 
     [HttpGet]
     public async Task<IActionResult> Index()
     {
-        var userId = _userManager.GetUserId(User);
+        var userId = int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var parsedUserId) ? parsedUserId : (int?)null;
 
         if (userId is null)
         {
@@ -52,7 +51,7 @@ public class CategoriesController : Controller
             return View(model);
         }
 
-        var userId = _userManager.GetUserId(User);
+        var userId = int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var parsedUserId) ? parsedUserId : (int?)null;
 
         if (userId is null)
         {
@@ -63,7 +62,7 @@ public class CategoriesController : Controller
         {
             Name = model.Name.Trim(),
             Type = model.Type,
-            UserId = userId
+            UserId = userId.Value
         };
 
         _context.Categories.Add(category);

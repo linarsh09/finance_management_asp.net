@@ -1,0 +1,54 @@
+﻿@model List<FinanceManagement.Models.Transaction>
+
+@{
+    ViewData["Title"] = "Мои операции";
+}
+
+<h1>Мои операции</h1>
+
+<a asp-controller="Transactions"
+   asp-action="Create"
+   class="btn btn-primary mb-3">
+    Добавить операцию
+</a>
+
+@if (Model.Count == 0)
+{
+    <p>Операций пока нет.</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Дата</th>
+                <th>Счёт</th>
+                <th>Категория</th>
+                <th>Тип</th>
+                <th>Сумма</th>
+                <th>Примечание</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var transaction in Model)
+            {
+                <tr>
+                    <td>@transaction.Date.ToString("dd.MM.yyyy")</td>
+                    <td>@transaction.Account.Name</td>
+                    <td>@transaction.Category.Name</td>
+                    <td>
+                        @(transaction.Type ==
+                            FinanceManagement.Models.TransactionType.Income
+                            ? "Доход"
+                            : "Расход")
+                    </td>
+                    <td>
+                        @transaction.Amount.ToString("N2")
+                        @transaction.Account.CurrencyCode
+                    </td>
+                    <td>@transaction.Note</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}

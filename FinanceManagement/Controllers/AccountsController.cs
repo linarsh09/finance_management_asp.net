@@ -1,8 +1,8 @@
-﻿using FinanceManagement.Data;
+using FinanceManagement.Data;
 using FinanceManagement.Models;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 
 namespace FinanceManagement.Controllers
@@ -11,14 +11,12 @@ namespace FinanceManagement.Controllers
     public class AccountsController : Controller
     {
         private readonly FinanceDbContext _context;
-        private readonly UserManager<IdentityUser> _userManager;
+        
 
-        public AccountsController(
-            FinanceDbContext context,
-            UserManager<IdentityUser> userManager)
+        public AccountsController(FinanceDbContext context)
         {
             _context = context;
-            _userManager = userManager;
+
         }
 
         [HttpGet]
@@ -36,7 +34,7 @@ namespace FinanceManagement.Controllers
                 return View(model);
             }
 
-            var userId = _userManager.GetUserId(User);
+            var userId = int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var parsedUserId) ? parsedUserId : (int?)null;
 
             if (userId is null)
             {
@@ -47,7 +45,7 @@ namespace FinanceManagement.Controllers
             {
                 Name = model.Name.Trim(),
                 CurrencyCode = model.CurrencyCode,
-                UserId = userId
+                UserId = userId.Value
             };
 
             _context.Accounts.Add(account);
