@@ -2,6 +2,7 @@ using FinanceManagement.Data;
 using FinanceManagement.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 using System.Security.Claims;
 
 
@@ -11,12 +12,13 @@ namespace FinanceManagement.Controllers
     public class AccountsController : Controller
     {
         private readonly FinanceDbContext _context;
+        private readonly IMemoryCache _cache;
         
 
-        public AccountsController(FinanceDbContext context)
+        public AccountsController(FinanceDbContext context, IMemoryCache cache)
         {
             _context = context;
-
+            _cache = cache;
         }
 
         [HttpGet]
@@ -50,6 +52,7 @@ namespace FinanceManagement.Controllers
 
             _context.Accounts.Add(account);
             await _context.SaveChangesAsync();
+            _cache.Remove(HomeController.DashboardCacheKey(userId.Value));
 
             return RedirectToAction("Index", "Home");
         }

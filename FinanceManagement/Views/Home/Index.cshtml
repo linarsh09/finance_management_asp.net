@@ -12,7 +12,7 @@
 
 
 
-@model List<FinanceManagement.Models.Account>
+@model List<FinanceManagement.Models.AccountSummaryViewModel>
 
 @{
     ViewData["Title"] = "Мои счета";
@@ -28,6 +28,12 @@
    class="btn btn-success mb-3">
     Добавить операцию
 </a> 
+<a asp-controller="Transfers"
+   asp-action="Create"
+   class="btn btn-outline-primary mb-3">
+    Перевод между счетами
+</a>
+
 
 <h1>Мои счета</h1>
 
@@ -50,6 +56,7 @@ else
             <tr>
                 <th>Название</th>
                 <th>Валюта</th>
+                <th>Баланс</th>
             </tr>
         </thead>
         <tbody>
@@ -58,6 +65,7 @@ else
                 <tr>
                     <td>@account.Name</td>
                     <td>@account.CurrencyCode</td>
+                    <td>@account.Balance.ToString("N2")</td>
                 </tr>
             }
         </tbody>

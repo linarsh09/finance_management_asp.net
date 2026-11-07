@@ -1,5 +1,5 @@
 ﻿<!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -34,6 +34,10 @@
                         </li>
                     </ul>
                     <partial name="_LoginPartial" />
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        <button id="density-toggle" class="btn btn-sm btn-outline-secondary ms-2" type="button" aria-pressed="false">Компактный вид</button>
+                    }
                 </div>
             </div>
         </nav>
@@ -52,6 +56,10 @@
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+    @if (User.Identity?.IsAuthenticated == true)
+    {
+        <script src="~/js/browser-storage.js" asp-append-version="true"></script>
+    }
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
