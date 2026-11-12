@@ -38,6 +38,7 @@ public class TransfersController : Controller
         return View(new CreateTransferViewModel());
     }
 
+
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(
@@ -127,6 +128,37 @@ public class TransfersController : Controller
 
         return RedirectToAction("Index", "Home");
     }
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Delete(int id)
+    {
+        if (!int.TryParse(
+            User.FindFirstValue(ClaimTypes.NameIdentifier),
+            out var userId))
+        {
+            return Challenge();
+        }
+
+        var transfer = await _context.Transfers
+            .FirstOrDefaultAsync(t =>
+                t.Id == id
+                && t.FromAccount.UserId == userId
+                && t.ToAccount.UserId == userId);
+
+        if (transfer is null)
+        {
+            return NotFound();
+        }
+
+        _context.Transfers.Remove(transfer);
+        await _context.SaveChangesAsync();
+
+        _cache.Remove(HomeController.DashboardCacheKey(userId));
+
+        TempData["SuccessMessage"] = "Перевод удалён";
+
+        return RedirectToAction("Index", "Transactions");
+    } 
 
     private async Task LoadAccountsAsync(int userId)
     {

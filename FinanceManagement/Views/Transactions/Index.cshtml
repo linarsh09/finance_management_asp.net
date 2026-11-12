@@ -139,6 +139,15 @@ else
       class="row g-3 mb-3">
 
     <div class="col-auto">
+        <label for="accountId" class="form-label">Счёт</label>
+        <select id="accountId"
+                name="accountId"
+                asp-items="ViewBag.Accounts"
+                class="form-select">
+            <option value="">Все счета</option>
+        </select>
+    </div>
+    <div class="col-auto">
         <label for="dateFrom" class="form-label">С даты</label>
         <input type="date"
                id="dateFrom"
@@ -168,6 +177,40 @@ else
         </a>
     </div>
 </form>
+
+@if (ViewBag.CurrencyTotals is
+    List<FinanceManagement.Models.CurrencyTotalsViewModel> totals
+    && totals.Count > 0)
+{
+    <h2 class="h4">Итоги по фильтру</h2>
+
+    <table class="table table-bordered mb-4">
+        <thead>
+            <tr>
+                <th>Валюта</th>
+                <th>Доходы</th>
+                <th>Расходы</th>
+                <th>Разница</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var total in totals)
+            {
+                <tr>
+                    <td>@total.CurrencyCode</td>
+                    <td>@total.Income.ToString("N2")</td>
+                    <td>@total.Expense.ToString("N2")</td>
+                    <td>@total.Difference.ToString("N2")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <p class="text-muted">
+        Переводы между счетами не включены.
+        Разница — доходы минус расходы за выбранный период.
+    </p>
+}
 
 <a asp-controller="Transactions"
    asp-action="Create"
@@ -239,7 +282,20 @@ else
                         }
                         else
                         {
-                            <span class="text-muted">—</span>
+                            <form asp-controller="Transfers"
+                                  asp-action="Delete"
+                                  method="post"
+                                  onsubmit="return confirm('Удалить перевод? Балансы обоих счетов будут пересчитаны.');">
+
+                                <input type="hidden"
+                                       name="id"
+                                       value="@operation.Id" />
+
+                                <button type="submit"
+                                        class="btn btn-sm btn-outline-danger">
+                                    Удалить перевод
+                                </button>
+                            </form>
                         }
                     </td>
                 </tr>

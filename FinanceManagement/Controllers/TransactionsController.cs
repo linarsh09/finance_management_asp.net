@@ -23,7 +23,8 @@ public class TransactionsController : Controller
     [HttpGet]
     public async Task<IActionResult> Index(
     DateOnly? dateFrom,
-    DateOnly? dateTo)
+    DateOnly? dateTo,
+    int? accountId)
     {
         if (!int.TryParse(
             User.FindFirstValue(ClaimTypes.NameIdentifier),
@@ -40,6 +41,25 @@ public class TransactionsController : Controller
             .AsNoTracking()
             .Where(t => t.FromAccount.UserId == userId
                      && t.ToAccount.UserId == userId);
+
+        if (accountId.HasValue)
+        {
+            var accountExists = await _context.Accounts
+                .AnyAsync(a => a.Id == accountId.Value
+                            && a.UserId == userId);
+
+            if (!accountExists)
+            {
+                return NotFound();
+            }
+
+            transactionsQuery = transactionsQuery
+                .Where(t => t.AccountId == accountId.Value);
+
+            transfersQuery = transfersQuery
+                .Where(t => t.FromAccountId == accountId.Value
+                         || t.ToAccountId == accountId.Value);
+        }
 
         if (dateFrom.HasValue && dateTo.HasValue
             && dateFrom.Value > dateTo.Value)
@@ -69,6 +89,27 @@ public class TransactionsController : Controller
                     .Where(t => t.Date <= dateTo.Value);
             }
         }
+
+        var totals = await transactionsQuery
+    .GroupBy(t => t.Account.CurrencyCode)
+    .Select(g => new CurrencyTotalsViewModel
+    {
+        CurrencyCode = g.Key,
+
+        Income = g.Sum(t =>
+            t.Type == TransactionType.Income
+                ? t.Amount
+                : 0m),
+
+        Expense = g.Sum(t =>
+            t.Type == TransactionType.Expense
+                ? t.Amount
+                : 0m)
+    })
+    .OrderBy(t => t.CurrencyCode)
+    .ToListAsync();
+
+        ViewBag.CurrencyTotals = totals;
 
         var transactions = await transactionsQuery
             .Select(t => new OperationHistoryViewModel
@@ -116,6 +157,20 @@ public class TransactionsController : Controller
 
         ViewBag.DateFrom = dateFrom?.ToString("yyyy-MM-dd");
         ViewBag.DateTo = dateTo?.ToString("yyyy-MM-dd");
+
+        var accounts = await _context.Accounts
+    .AsNoTracking()
+    .Where(a => a.UserId == userId)
+    .OrderBy(a => a.Name)
+    .Select(a => new
+    {
+        a.Id,
+        Label = a.Name + " (" + a.CurrencyCode + ")"
+    })
+    .ToListAsync();
+
+        ViewBag.Accounts = new SelectList(
+            accounts, "Id", "Label", accountId);
 
         return View(history);
     }
