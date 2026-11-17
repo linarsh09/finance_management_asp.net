@@ -1,75 +1,84 @@
-﻿@* @{
-    ViewData["Title"] = "Home Page";
-}
-
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
-    <p>Количество моих счетов: @ViewBag.AccountCount</p>
-    <a asp-controller="Accounts" asp-action="Create"
-       class="btn btn-primary">Добавить счёт</a>
-</div> *@
-
-
-
 @model List<FinanceManagement.Models.AccountSummaryViewModel>
 
 @{
-    ViewData["Title"] = "Мои счета";
+    ViewData["Title"] = "Мои финансы";
+    var accountCount = Model.Count;
 }
 
-@if (TempData["SuccessMessage"] is string message)
-{
-    <div class="alert alert-success">@message</div>
-}
+<div class="dashboard">
+    @if (TempData["SuccessMessage"] is string message)
+    {
+        <div class="alert alert-success dashboard-alert">@message</div>
+    }
 
-<a asp-controller="Transactions"
-   asp-action="Create"
-   class="btn btn-success mb-3">
-    Добавить операцию
-</a> 
-<a asp-controller="Transfers"
-   asp-action="Create"
-   class="btn btn-outline-primary mb-3">
-    Перевод между счетами
-</a>
+    <section class="welcome-panel">
+        <div class="welcome-copy">
+            <span class="eyebrow"><span class="eyebrow-dot"></span> ЛИЧНЫЕ ФИНАНСЫ</span>
+            <h1>Деньги под контролем.<br /><span>Жизнь — в балансе.</span></h1>
+            <p>Собирайте счета в одном месте, следите за операциями и принимайте решения с уверенностью.</p>
+            <div class="welcome-actions">
+                <a asp-controller="Transactions" asp-action="Create" class="btn btn-sage">+ Новая операция</a>
+                <a asp-controller="Transfers" asp-action="Create" class="btn btn-light-outline">Перевести деньги <span aria-hidden="true">↗</span></a>
+            </div>
+        </div>
+        <div class="welcome-art" aria-hidden="true">
+            <div class="art-orbit orbit-one"></div>
+            <div class="art-orbit orbit-two"></div>
+            <div class="art-leaf leaf-one">✳</div>
+            <div class="art-leaf leaf-two">✳</div>
+            <div class="art-card">
+                <div class="art-card-top"><span>МОИ СЧЕТА</span><span class="art-card-mark">✦</span></div>
+                <div class="art-card-number">@accountCount.ToString("00")</div>
+                <div class="art-card-bottom"><span>всё на своих местах</span><span class="art-card-bars"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span></div>
+            </div>
+            <div class="art-caption"><span class="caption-icon">↗</span><span><b>Финансовая ясность</b><small>начинается с простого</small></span></div>
+        </div>
+        <div class="welcome-grain" aria-hidden="true"></div>
+    </section>
 
+    <section class="quick-links" aria-label="Разделы">
+        <a asp-controller="Transactions" asp-action="Index" class="quick-link">
+            <span class="quick-icon icon-transaction">↗</span><span><b>Операции</b><small>Доходы и расходы</small></span><span class="quick-arrow">→</span>
+        </a>
+        <a asp-controller="Categories" asp-action="Index" class="quick-link">
+            <span class="quick-icon icon-category">◈</span><span><b>Категории</b><small>Порядок в расходах</small></span><span class="quick-arrow">→</span>
+        </a>
+        <a asp-controller="Accounts" asp-action="Create" class="quick-link">
+            <span class="quick-icon icon-account">＋</span><span><b>Новый счёт</b><small>Добавить в обзор</small></span><span class="quick-arrow">→</span>
+        </a>
+    </section>
 
-<h1>Мои счета</h1>
+    <section class="accounts-section">
+        <div class="section-heading">
+            <div><span class="eyebrow">ВАША КАРТИНА</span><h2>Счета и накопления</h2><p>Все ваши счета — в одном спокойном обзоре.</p></div>
+            <a asp-controller="Accounts" asp-action="Create" class="text-link">Добавить счёт <span aria-hidden="true">↗</span></a>
+        </div>
 
-<p>Количество моих счетов: @Model.Count</p>
-
-<a asp-controller="Accounts"
-   asp-action="Create"
-   class="btn btn-primary mb-3">
-    Добавить счёт
-</a>
-
-@if (Model.Count == 0)
-{
-    <p>У вас пока нет счетов. Создайте первый.</p>
-}
-else
-{
-    <div class="table-responsive">
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Название</th>
-                    <th>Валюта</th>
-                    <th>Баланс</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var account in Model)
+        @if (accountCount == 0)
+        {
+            <div class="empty-accounts">
+                <span class="empty-icon">＋</span>
+                <div><h3>Начните с первого счёта</h3><p>Добавьте банковский счёт, наличные или накопления — и финансовая картина станет яснее.</p></div>
+                <a asp-controller="Accounts" asp-action="Create" class="btn btn-sage">Добавить счёт</a>
+            </div>
+        }
+        else
+        {
+            <div class="account-grid">
+                @for (var i = 0; i < Model.Count; i++)
                 {
-                    <tr>
-                        <td>@account.Name</td>
-                        <td>@account.CurrencyCode</td>
-                        <td>@account.Balance.ToString("N2")</td>
-                    </tr>
+                    var account = Model[i];
+                    <article class="account-card account-card-@(i % 3)">
+                        <div class="account-card-top"><span class="account-symbol">@(i % 3 == 0 ? "◈" : i % 3 == 1 ? "⌁" : "✳")</span><span class="account-currency">@account.CurrencyCode</span></div>
+                        <div class="account-name">@account.Name</div>
+                        <div class="account-balance">@account.Balance.ToString("N2") <span>@account.CurrencyCode</span></div>
+                        <div class="account-card-footer"><span>Текущий баланс</span><span class="account-pulse"><i></i> Активен</span></div>
+                        <div class="account-decoration" aria-hidden="true"></div>
+                    </article>
                 }
-            </tbody>
-        </table>
-    </div>
-}
+            </div>
+        }
+    </section>
+
+    <section class="closing-note"><span class="closing-star">✳</span><p>Маленькие шаги сегодня — <b>больше свободы завтра.</b></p><span class="closing-line"></span></section>
+</div>
