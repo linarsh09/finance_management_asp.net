@@ -1,5 +1,13 @@
 using FinanceManagement.Data;
 using Microsoft.EntityFrameworkCore;
+using FinanceManagement.Repositories;
+using FinanceManagement.Services;
+using FinanceManagement.Factories;
+using FinanceManagement.Models;
+using Microsoft.AspNetCore.Identity;
+using FinanceManagement.Authentication;
+using Microsoft.AspNetCore.Authentication;
+
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<FinanceDbContext>(options => options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -12,26 +20,47 @@ builder.Services.AddSession(options =>
     options.Cookie.IsEssential = true;
     options.Cookie.SameSite = SameSiteMode.Lax;
     options.IdleTimeout = TimeSpan.FromMinutes(30);
-});
-builder.Services.AddAuthentication("Cookies").AddCookie("Cookies", options =>
-{
-    options.LoginPath = "/User/Login";
-    options.LogoutPath = "/User/Logout";
-    options.Cookie.Name = ".FinanceManagement.Auth";
-    options.Cookie.HttpOnly = true;
-    options.Cookie.SameSite = SameSiteMode.Lax;
     options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-    options.ExpireTimeSpan = TimeSpan.FromHours(8);
-    options.SlidingExpiration = true;
 });
+
+builder.Services
+    .AddAuthentication(SessionAuthenticationHandler.SchemeName)
+    .AddScheme<
+        AuthenticationSchemeOptions,
+        SessionAuthenticationHandler>(
+            SessionAuthenticationHandler.SchemeName,
+            options => { });
+
 builder.Services.AddAuthorization();
 builder.Services.AddControllersWithViews();
+builder.Services.AddScoped<IAccountRepository, AccountRepository>();
+builder.Services.AddScoped<IAccountService, AccountService>();
+builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
+builder.Services.AddScoped<ICategoryService, CategoryService>();
+builder.Services.AddScoped<TransactionCreator, IncomeTransactionCreator>();
+builder.Services.AddScoped<TransactionCreator, ExpenseTransactionCreator>();
+builder.Services.AddScoped<ITransactionRepository,TransactionRepository>();
+builder.Services.AddScoped<ITransactionService, TransactionService>();
+builder.Services.AddScoped<ITransferRepository, TransferRepository>();
+builder.Services.AddScoped<ITransferService, TransferService>();
+builder.Services.AddSingleton<ICurrencyRules, CurrencyRules>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<
+    IDatabaseInitializerRepository,
+    DatabaseInitializerRepository>();
+
 var app = builder.Build();
+
 using (var scope = app.Services.CreateScope())
 {
-    var db = scope.ServiceProvider.GetRequiredService<FinanceDbContext>();
-    db.Database.Migrate();
+    var initializer = scope.ServiceProvider
+        .GetRequiredService<IDatabaseInitializerRepository>();
+
+    await initializer.InitializeAsync();
 }
+
 if (!app.Environment.IsDevelopment()) { app.UseExceptionHandler("/Home/Error"); app.UseHsts(); }
 app.UseHttpsRedirection();
 app.UseRouting();

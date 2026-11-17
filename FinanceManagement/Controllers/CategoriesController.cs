@@ -1,8 +1,7 @@
-using FinanceManagement.Data;
 using FinanceManagement.Models;
+using FinanceManagement.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
 namespace FinanceManagement.Controllers;
@@ -10,65 +9,54 @@ namespace FinanceManagement.Controllers;
 [Authorize]
 public class CategoriesController : Controller
 {
-    private readonly FinanceDbContext _context;
-    
+    private readonly ICategoryService _categoryService;
 
-    public CategoriesController(FinanceDbContext context)
+    public CategoriesController(ICategoryService categoryService)
     {
-        _context = context;
+        _categoryService = categoryService;
     }
 
     [HttpGet]
     public async Task<IActionResult> Index()
     {
-        var userId = int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var parsedUserId) ? parsedUserId : (int?)null;
-
-        if (userId is null)
+        if (!int.TryParse(
+            User.FindFirstValue(ClaimTypes.NameIdentifier),
+            out var userId))
         {
             return Challenge();
         }
 
-        var categories = await _context.Categories
-            .Where(c => c.UserId == userId)
-            .OrderBy(c => c.Name)
-            .ToListAsync();
+        var categories = await _categoryService
+            .GetByUserIdAsync(userId);
 
         return View(categories);
     }
 
     [HttpGet]
-    public IActionResult Create() 
+    public IActionResult Create()
     {
         return View(new CreateCategoryViewModel());
     }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create(CreateCategoryViewModel model)
+    public async Task<IActionResult> Create(
+        CreateCategoryViewModel model)
     {
+        if (!int.TryParse(
+            User.FindFirstValue(ClaimTypes.NameIdentifier),
+            out var userId))
+        {
+            return Challenge();
+        }
+
         if (!ModelState.IsValid)
         {
             return View(model);
         }
 
-        var userId = int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var parsedUserId) ? parsedUserId : (int?)null;
-
-        if (userId is null)
-        {
-            return Challenge();
-        }
-
-        var category = new Category
-        {
-            Name = model.Name.Trim(),
-            Type = model.Type,
-            UserId = userId.Value
-        };
-
-        _context.Categories.Add(category);
-        await _context.SaveChangesAsync();
+        await _categoryService.CreateAsync(userId, model);
 
         return RedirectToAction(nameof(Index));
     }
-
 }

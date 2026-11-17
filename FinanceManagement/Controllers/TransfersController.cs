@@ -1,10 +1,8 @@
-﻿using FinanceManagement.Data;
-using FinanceManagement.Models;
+﻿using FinanceManagement.Models;
+using FinanceManagement.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Caching.Memory;
 using System.Security.Claims;
 
 namespace FinanceManagement.Controllers;
@@ -12,23 +10,19 @@ namespace FinanceManagement.Controllers;
 [Authorize]
 public class TransfersController : Controller
 {
-    private readonly FinanceDbContext _context;
-    private readonly IMemoryCache _cache;
+    private readonly ITransferService _transferService;
 
-    public TransfersController(
-        FinanceDbContext context,
-        IMemoryCache cache)
+    public TransfersController(ITransferService transferService)
     {
-        _context = context;
-        _cache = cache;
+        _transferService = transferService;
     }
 
     [HttpGet]
     public async Task<IActionResult> Create()
     {
         if (!int.TryParse(
-            User.FindFirstValue(ClaimTypes.NameIdentifier),
-            out var userId))
+                User.FindFirstValue(ClaimTypes.NameIdentifier),
+                out var userId))
         {
             return Challenge();
         }
@@ -38,141 +32,79 @@ public class TransfersController : Controller
         return View(new CreateTransferViewModel());
     }
 
-
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(
         CreateTransferViewModel model)
     {
         if (!int.TryParse(
-            User.FindFirstValue(ClaimTypes.NameIdentifier),
-            out var userId))
+                User.FindFirstValue(ClaimTypes.NameIdentifier),
+                out var userId))
         {
             return Challenge();
         }
 
-        var fromAccount = await _context.Accounts
-            .FirstOrDefaultAsync(a =>
-                a.Id == model.FromAccountId && a.UserId == userId);
-
-        var toAccount = await _context.Accounts
-            .FirstOrDefaultAsync(a =>
-                a.Id == model.ToAccountId && a.UserId == userId);
-
-        if (fromAccount is null)
+        if (ModelState.IsValid)
         {
+            var result = await _transferService.CreateAsync(
+                userId, model);
+
+            if (result.Success)
+            {
+                TempData["SuccessMessage"] = "Перевод сохранён";
+
+                return RedirectToAction("Index", "Home");
+            }
+
             ModelState.AddModelError(
-                nameof(model.FromAccountId),
-                "Выберите свой счёт списания");
+                result.Field ?? string.Empty,
+                result.Error ?? "Не удалось сохранить перевод");
         }
 
-        if (toAccount is null)
-        {
-            ModelState.AddModelError(
-                nameof(model.ToAccountId),
-                "Выберите свой счёт зачисления");
-        }
+        await LoadAccountsAsync(userId);
 
-        if (model.FromAccountId == model.ToAccountId)
-        {
-            ModelState.AddModelError(
-                nameof(model.ToAccountId),
-                "Выберите другой счёт для зачисления");
-        }
-
-        if (fromAccount is not null && toAccount is not null
-            && !string.Equals(
-                fromAccount.CurrencyCode,
-                toAccount.CurrencyCode,
-                StringComparison.OrdinalIgnoreCase))
-        {
-            ModelState.AddModelError(
-                nameof(model.ToAccountId),
-                "Для перевода выберите счета в одной валюте");
-        }
-
-        if (model.Date == default)
-        {
-            ModelState.AddModelError(
-                nameof(model.Date), "Укажите дату");
-        }
-
-        if (decimal.Round(model.Amount, 2) != model.Amount)
-        {
-            ModelState.AddModelError(
-                nameof(model.Amount),
-                "Допускается не более двух знаков после запятой");
-        }
-
-        if (!ModelState.IsValid)
-        {
-            await LoadAccountsAsync(userId);
-            return View(model);
-        }
-
-        var transfer = new Transfer
-        {
-            FromAccountId = model.FromAccountId,
-            ToAccountId = model.ToAccountId,
-            Amount = model.Amount,
-            Date = model.Date,
-            Note = model.Note?.Trim()
-        };
-
-        _context.Transfers.Add(transfer);
-        await _context.SaveChangesAsync();
-
-        _cache.Remove(HomeController.DashboardCacheKey(userId));
-
-        TempData["SuccessMessage"] = "Перевод сохранён";
-
-        return RedirectToAction("Index", "Home");
+        return View(model);
     }
+
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Delete(int id)
     {
         if (!int.TryParse(
-            User.FindFirstValue(ClaimTypes.NameIdentifier),
-            out var userId))
+                User.FindFirstValue(ClaimTypes.NameIdentifier),
+                out var userId))
         {
             return Challenge();
         }
 
-        var transfer = await _context.Transfers
-            .FirstOrDefaultAsync(t =>
-                t.Id == id
-                && t.FromAccount.UserId == userId
-                && t.ToAccount.UserId == userId);
+        var result = await _transferService.DeleteAsync(id, userId);
 
-        if (transfer is null)
+        if (result.Success)
         {
-            return NotFound();
+            TempData["SuccessMessage"] = "Перевод удалён";
+        }
+        else
+        {
+            TempData["ErrorMessage"] =
+                result.Error ?? "Не удалось удалить перевод";
         }
 
-        _context.Transfers.Remove(transfer);
-        await _context.SaveChangesAsync();
-
-        _cache.Remove(HomeController.DashboardCacheKey(userId));
-
-        TempData["SuccessMessage"] = "Перевод удалён";
-
         return RedirectToAction("Index", "Transactions");
-    } 
+    }
 
     private async Task LoadAccountsAsync(int userId)
     {
-        var accounts = await _context.Accounts
-            .Where(a => a.UserId == userId)
-            .OrderBy(a => a.Name)
+        var accounts = await _transferService.GetAccountsAsync(userId);
+
+        var items = accounts
             .Select(a => new
             {
                 a.Id,
                 Label = a.Name + " (" + a.CurrencyCode + ")"
             })
-            .ToListAsync();
+            .ToList();
 
-        ViewBag.FromAccounts = new SelectList(accounts, "Id", "Label");
-        ViewBag.ToAccounts = new SelectList(accounts, "Id", "Label");
+        ViewBag.FromAccounts = new SelectList(items, "Id", "Label");
+        ViewBag.ToAccounts = new SelectList(items, "Id", "Label");
     }
 }

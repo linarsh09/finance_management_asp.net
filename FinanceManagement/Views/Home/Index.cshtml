@@ -51,23 +51,25 @@
 }
 else
 {
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Название</th>
-                <th>Валюта</th>
-                <th>Баланс</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var account in Model)
-            {
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
                 <tr>
-                    <td>@account.Name</td>
-                    <td>@account.CurrencyCode</td>
-                    <td>@account.Balance.ToString("N2")</td>
+                    <th>Название</th>
+                    <th>Валюта</th>
+                    <th>Баланс</th>
                 </tr>
-            }
-        </tbody>
-    </table>
+            </thead>
+            <tbody>
+                @foreach (var account in Model)
+                {
+                    <tr>
+                        <td>@account.Name</td>
+                        <td>@account.CurrencyCode</td>
+                        <td>@account.Balance.ToString("N2")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
 }

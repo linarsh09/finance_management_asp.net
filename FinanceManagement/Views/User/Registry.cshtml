@@ -48,3 +48,15 @@
     <button class="btn btn-primary" type="submit">Зарегистрироваться</button>
 </form>
 <script src="~/js/password-visibility.js" asp-append-version="true"></script>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        $(function() {
+            $("#Login").on("input", function() {
+                $(this).valid();
+            });
+        });
+    </script>
+}

@@ -1,60 +1,46 @@
-using FinanceManagement.Data;
 using FinanceManagement.Models;
+using FinanceManagement.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Caching.Memory;
 using System.Security.Claims;
 
+namespace FinanceManagement.Controllers;
 
-namespace FinanceManagement.Controllers
+[Authorize]
+public class AccountsController : Controller
 {
-    [Authorize]
-    public class AccountsController : Controller
+    private readonly IAccountService _accountService;
+
+    public AccountsController(IAccountService accountService)
     {
-        private readonly FinanceDbContext _context;
-        private readonly IMemoryCache _cache;
-        
+        _accountService = accountService;
+    }
 
-        public AccountsController(FinanceDbContext context, IMemoryCache cache)
+    [HttpGet]
+    public IActionResult Create()
+    {
+        return View(new CreateAccountViewModel());
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Create(
+        CreateAccountViewModel model)
+    {
+        if (!int.TryParse(
+            User.FindFirstValue(ClaimTypes.NameIdentifier),
+            out var userId))
         {
-            _context = context;
-            _cache = cache;
+            return Challenge();
         }
 
-        [HttpGet]
-        public IActionResult Create()
+        if (!ModelState.IsValid)
         {
-            return View(new CreateAccountViewModel());
+            return View(model);
         }
 
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(CreateAccountViewModel model)
-        {
-            if (!ModelState.IsValid)
-            {
-                return View(model);
-            }
+        await _accountService.CreateAsync(userId, model);
 
-            var userId = int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var parsedUserId) ? parsedUserId : (int?)null;
-
-            if (userId is null)
-            {
-                return Challenge();
-            }
-
-            var account = new Account
-            {
-                Name = model.Name.Trim(),
-                CurrencyCode = model.CurrencyCode,
-                UserId = userId.Value
-            };
-
-            _context.Accounts.Add(account);
-            await _context.SaveChangesAsync();
-            _cache.Remove(HomeController.DashboardCacheKey(userId.Value));
-
-            return RedirectToAction("Index", "Home");
-        }
+        return RedirectToAction("Index", "Home");
     }
 }
