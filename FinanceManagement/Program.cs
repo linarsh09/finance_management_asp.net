@@ -7,7 +7,7 @@ using FinanceManagement.Models;
 using Microsoft.AspNetCore.Identity;
 using FinanceManagement.Authentication;
 using Microsoft.AspNetCore.Authentication;
-
+using FinanceManagement.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<FinanceDbContext>(options => options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -50,8 +50,51 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<
     IDatabaseInitializerRepository,
     DatabaseInitializerRepository>();
+builder.Services
+    .AddOptions<SmtpOptions>()
+    .Bind(builder.Configuration.GetSection(SmtpOptions.SectionName))
+    .Validate(
+        options =>
+            !string.IsNullOrWhiteSpace(options.Host)
+            && options.Port is > 0 and <= 65535
+            && !string.IsNullOrWhiteSpace(options.UserName)
+            && !string.IsNullOrWhiteSpace(options.Password)
+            && !string.IsNullOrWhiteSpace(options.FromEmail),
+        "Заполните настройки Smtp в User Secrets.")
+    .ValidateOnStart();
+
+builder.Services.AddScoped<IEmailSender, SmtpEmailSender>();
+
+builder.Services.AddScoped<
+    IEmailConfirmationService,
+    EmailConfirmationService>();
+
+builder.Services.AddScoped<
+    IPasswordResetService,
+    PasswordResetService>();    
+
+
 
 var app = builder.Build();
+///////////////////////////////////////////////// это тестовый блок, присылающий письмо на почту при входевс    
+//if (app.Environment.IsDevelopment())
+//{
+//    using var emailScope = app.Services.CreateScope();
+
+//    var emailSender = emailScope.ServiceProvider
+//        .GetRequiredService<IEmailSender>();
+
+//    var recipient = builder.Configuration["Smtp:FromEmail"]
+//        ?? throw new InvalidOperationException(
+//            "Не указан Smtp:FromEmail");
+
+//    await emailSender.SendAsync(
+//        recipient,
+//        "Проверка FinanceManagement",
+//        "Отправка писем работает. Это тестовое письмо.");
+//}
+
+////////////////////////////////////////////////////
 
 using (var scope = app.Services.CreateScope())
 {

@@ -3,7 +3,8 @@
 public record AuthenticatedUser(
     int Id,
     string Login,
-    string Email);
+    string Email,
+    int SessionVersion = 0);
 
 public record UserAuthResult(
     bool Success,

@@ -4,6 +4,12 @@
 @{
     ViewData["Title"] = "Вход";
 }
+@if (TempData["SuccessMessage"] is string message)
+{
+    <div class="alert alert-success">@message</div>
+}
+
+
 
 <h1>Вход</h1>
 <form asp-action="Login" method="post" class="mt-3" style="max-width: 28rem;">
@@ -26,4 +32,16 @@
     </div>
     <button class="btn btn-primary" type="submit">Войти</button>
 </form>
+
+<p class="mt-3">
+    <a asp-controller="User" asp-action="ForgotPassword">
+        Забыли пароль?
+    </a>
+</p>
+
+<p class="mt-3">
+    <a asp-controller="User" asp-action="ConfirmEmail">
+        Подтвердить почту / запросить новый код
+    </a>
+</p>
 <script src="~/js/password-visibility.js" asp-append-version="true"></script>

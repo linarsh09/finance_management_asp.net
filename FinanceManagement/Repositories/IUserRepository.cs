@@ -13,4 +13,10 @@ public interface IUserRepository
     Task AddAsync(User user);
 
     Task SaveChangesAsync();
+
+    Task<User?> FindByEmailAsync(string email);
+
+    Task<T> ExecuteSerializableAsync<T>(Func<Task<T>> action);
+
+    Task<User?> FindByIdAsync(int id);
 }

@@ -11,9 +11,14 @@ public class UserController : Controller
 {
     private readonly IUserService _userService;
 
-    public UserController(IUserService userService)
+    public UserController(
+        IUserService userService,
+        IEmailConfirmationService emailConfirmation,
+        IPasswordResetService passwordReset)
     {
         _userService = userService;
+        _emailConfirmation = emailConfirmation;
+        _passwordReset = passwordReset;
     }
 
     [HttpGet]
@@ -42,9 +47,22 @@ public class UserController : Controller
             return View(dto);
         }
 
-        await SignInAsync(result.User);
+        var sending = await _emailConfirmation.SendCodeAsync(
+            result.User.Email);
 
-        return RedirectToAction("Index", "Home");
+        if (sending.Success)
+        {
+            TempData["SuccessMessage"] =
+                "Код отправлен на вашу почту.";
+        }
+        else
+        {
+            TempData["ErrorMessage"] = sending.Error;
+        }
+
+        return RedirectToAction(
+            nameof(ConfirmEmail),
+            new { email = result.User.Email });
     }
 
     [HttpGet]
@@ -98,8 +116,14 @@ public class UserController : Controller
 
         new Claim(ClaimTypes.Name, user.Login),
 
-        new Claim(ClaimTypes.Email, user.Email)
-    };
+        new Claim(ClaimTypes.Email, user.Email),
+
+        new Claim(
+            "SessionVersion",
+            user.SessionVersion.ToString())
+        };
+
+
 
         var identity = new ClaimsIdentity(
             claims,
@@ -108,5 +132,147 @@ public class UserController : Controller
         return HttpContext.SignInAsync(
             SessionAuthenticationHandler.SchemeName,
             new ClaimsPrincipal(identity));
+    }
+    private readonly IEmailConfirmationService _emailConfirmation;
+
+    [HttpGet]
+    public IActionResult ConfirmEmail(string? email)
+    {
+        return View(new ConfirmEmailDto
+        {
+            Email = email ?? string.Empty
+        });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ConfirmEmail(ConfirmEmailDto model)
+    {
+        if (!ModelState.IsValid)
+        {
+            return View(model);
+        }
+
+        var result = await _emailConfirmation.ConfirmAsync(model);
+
+        if (!result.Success)
+        {
+            ModelState.AddModelError(
+                result.Field ?? string.Empty,
+                result.Error ?? "Не удалось подтвердить почту.");
+
+            return View(model);
+        }
+
+        TempData["SuccessMessage"] =
+            "Почта подтверждена. Теперь войдите в аккаунт.";
+
+        return RedirectToAction(nameof(Login));
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ResendEmailCode(
+        RequestEmailCodeDto model)
+    {
+        if (!ModelState.IsValid)
+        {
+            return View(
+                "ConfirmEmail",
+                new ConfirmEmailDto { Email = model.Email });
+        }
+
+        var result = await _emailConfirmation.SendCodeAsync(model.Email);
+
+        if (result.Success)
+        {
+            TempData["SuccessMessage"] = "Новый код отправлен.";
+        }
+        else
+        {
+            TempData["ErrorMessage"] = result.Error;
+        }
+
+        return RedirectToAction(
+            nameof(ConfirmEmail),
+            new { email = model.Email });
+    }
+
+    private readonly IPasswordResetService _passwordReset;
+
+    [HttpGet]
+    public IActionResult ForgotPassword()
+    {
+        return View(new ForgotPasswordDto());
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ForgotPassword(
+        ForgotPasswordDto model)
+    {
+        if (!ModelState.IsValid)
+        {
+            return View(model);
+        }
+
+        var result = await _passwordReset.SendCodeAsync(model);
+
+        if (!result.Success)
+        {
+            ModelState.AddModelError(
+                result.Field ?? string.Empty,
+                result.Error ?? "Проверьте введённые данные.");
+
+            return View(model);
+        }
+
+        TempData["SuccessMessage"] =
+            "Если адрес зарегистрирован и почта подтверждена, " +
+            "на него отправлен код. Проверьте также папку «Спам». " +
+            "Повторный запрос доступен через минуту.";
+
+        return RedirectToAction(
+            nameof(ResetPassword),
+            new { email = model.Email.Trim() });
+    }
+
+    [HttpGet]
+    public IActionResult ResetPassword(string? email)
+    {
+        return View(new ResetPasswordDto
+        {
+            Email = email ?? string.Empty
+        });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ResetPassword(
+        ResetPasswordDto model)
+    {
+        if (!ModelState.IsValid)
+        {
+            return View(model);
+        }
+
+        var result = await _passwordReset.ResetAsync(model);
+
+        if (!result.Success)
+        {
+            ModelState.AddModelError(
+                result.Field ?? string.Empty,
+                result.Error ?? "Не удалось изменить пароль.");
+
+            return View(model);
+        }
+
+        await HttpContext.SignOutAsync(
+            SessionAuthenticationHandler.SchemeName);
+
+        TempData["SuccessMessage"] =
+            "Пароль изменён. Войдите с новым паролем.";
+
+        return RedirectToAction(nameof(Login));
     }
 }

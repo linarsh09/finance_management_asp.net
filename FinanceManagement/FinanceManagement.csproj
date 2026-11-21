@@ -11,7 +11,7 @@
     <None Include="Views\Categories\Create.cshtml" />
   </ItemGroup>
 
-  <ItemGroup>    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.12">
+  <ItemGroup>    <PackageReference Include="MailKit" Version="5.0.0" />    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.12">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
@@ -19,6 +19,7 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+    <PackageReference Include="MimeKit" Version="5.0.0" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
   </ItemGroup>
 

@@ -159,6 +159,22 @@ namespace FinanceManagement.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<int>("EmailConfirmationAttempts")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("EmailConfirmationCodeHash")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTimeOffset?>("EmailConfirmationExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset?>("EmailConfirmationLastSentAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("EmailConfirmed")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("Login")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -167,6 +183,22 @@ namespace FinanceManagement.Migrations
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<int>("PasswordResetAttempts")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("PasswordResetCodeHash")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTimeOffset?>("PasswordResetExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset?>("PasswordResetLastSentAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("SessionVersion")
+                        .HasColumnType("integer");
 
                     b.HasKey("Id");
 

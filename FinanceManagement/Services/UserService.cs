@@ -50,7 +50,8 @@ public class UserService : IUserService
         var user = new User
         {
             Login = login,
-            Email = email
+            Email = email,
+            EmailConfirmed = false
         };
 
         user.PasswordHash = _hasher.HashPassword(
@@ -92,6 +93,13 @@ public class UserService : IUserService
             return InvalidCredentials();
         }
 
+        if (!user.EmailConfirmed)
+        {
+            return new UserAuthResult(
+                false,
+                Error: "Сначала подтвердите почту кодом из письма.");
+        }
+
         if (verification ==
             PasswordVerificationResult.SuccessRehashNeeded)
         {
@@ -111,7 +119,8 @@ public class UserService : IUserService
             new AuthenticatedUser(
                 user.Id,
                 user.Login,
-                user.Email));
+                user.Email,
+                user.SessionVersion));
     }
 
     private static UserAuthResult InvalidCredentials()
@@ -140,5 +149,15 @@ public class UserService : IUserService
             false,
             Error: error.ErrorMessage ?? "Проверьте введённые данные.",
             Field: error.MemberNames.FirstOrDefault());
+    }
+    public async Task<bool> IsSessionValidAsync(
+    int userId,
+    int sessionVersion)
+    {
+        var user = await _repository.FindByIdAsync(userId);
+
+        return user is not null
+            && user.EmailConfirmed
+            && user.SessionVersion == sessionVersion;
     }
 }

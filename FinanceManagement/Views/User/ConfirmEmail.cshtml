@@ -1,0 +1,89 @@
+﻿@model FinanceManagement.DTO.ConfirmEmailDto
+
+@{
+    ViewData["Title"] = "Подтверждение почты";
+}
+
+<h1>Подтверждение почты</h1>
+
+<p>Введите код из письма. Код действует 10 минут. Если не нашли письмл - проверьте папку спам. </p>
+
+@if (TempData["SuccessMessage"] is string message)
+{
+    <div class="alert alert-success">@message</div>
+}
+
+@if (TempData["ErrorMessage"] is string error)
+{
+    <div class="alert alert-danger">@error</div>
+}
+
+<div style="max-width: 28rem;">
+    <form asp-controller="User"
+          asp-action="ConfirmEmail"
+          method="post">
+
+        <div asp-validation-summary="All"
+             class="text-danger"></div>
+
+        <div class="mb-3">
+            <label asp-for="Email" class="form-label"></label>
+            <input asp-for="Email"
+                   type="email"
+                   autocomplete="email"
+                   class="form-control" />
+            <span asp-validation-for="Email"
+                  class="text-danger"></span>
+        </div>
+
+        <div class="mb-3">
+            <label asp-for="Code" class="form-label"></label>
+            <input asp-for="Code"
+                   type="text"
+                   inputmode="numeric"
+                   autocomplete="one-time-code"
+                   maxlength="6"
+                   class="form-control" />
+            <span asp-validation-for="Code"
+                  class="text-danger"></span>
+        </div>
+
+        <button type="submit" class="btn btn-primary">
+            Подтвердить почту
+        </button>
+    </form>
+
+    <hr />
+
+    <form asp-controller="User"
+          asp-action="ResendEmailCode"
+          method="post">
+
+        <div class="mb-3">
+            <label for="resendEmail" class="form-label">
+                Почта для повторной отправки
+            </label>
+            <input type="email"
+                   id="resendEmail"
+                   name="Email"
+                   value="@Model.Email"
+                   required
+                   maxlength="256"
+                   class="form-control" />
+        </div>
+
+        <button type="submit" class="btn btn-outline-secondary">
+            Отправить код повторно
+        </button>
+    </form>
+
+    <p class="mt-3">
+        <a asp-controller="User" asp-action="Login">
+            Перейти ко входу
+        </a>
+    </p>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

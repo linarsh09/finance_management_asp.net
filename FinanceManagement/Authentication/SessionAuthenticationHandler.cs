@@ -17,9 +17,11 @@ public class SessionAuthenticationHandler
     public SessionAuthenticationHandler(
         IOptionsMonitor<AuthenticationSchemeOptions> options,
         ILoggerFactory logger,
-        UrlEncoder encoder)
+        UrlEncoder encoder,
+        IUserService userService)
         : base(options, logger, encoder)
     {
+        _userService = userService;
     }
 
     protected override async Task<AuthenticateResult>
@@ -56,6 +58,15 @@ public class SessionAuthenticationHandler
 
             return AuthenticateResult.Fail(
                 "Некорректные данные пользователя.");
+        }
+
+        if (!await _userService.IsSessionValidAsync(
+        user.Id, user.SessionVersion))
+        {
+            Context.Session.Clear();
+
+            return AuthenticateResult.Fail(
+                "Сеанс завершён. Войдите заново.");
         }
 
         var claims = new[]
@@ -99,10 +110,20 @@ public class SessionAuthenticationHandler
                 "Не указан логин пользователя.");
         }
 
+        if (!int.TryParse(
+                user.FindFirst("SessionVersion")?.Value,
+                out var sessionVersion)
+            || sessionVersion < 0)
+        {
+            throw new InvalidOperationException(
+                "Не указана версия сессии.");
+        }
+
         var sessionUser = new AuthenticatedUser(
             userId,
             login,
-            user.FindFirst(ClaimTypes.Email)?.Value ?? "");
+            user.FindFirst(ClaimTypes.Email)?.Value ?? "",
+            sessionVersion);
 
         await Context.Session.LoadAsync();
 
@@ -133,4 +154,8 @@ public class SessionAuthenticationHandler
 
         return Task.CompletedTask;
     }
+
+    private readonly IUserService _userService;
+
+
 }

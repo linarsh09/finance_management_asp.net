@@ -1,6 +1,9 @@
 ﻿using FinanceManagement.Data;
 using FinanceManagement.Models;
 using Microsoft.EntityFrameworkCore;
+using FinanceManagement.Exceptions;
+using Npgsql;
+using System.Data;
 
 namespace FinanceManagement.Repositories;
 
@@ -42,5 +45,59 @@ public class UserRepository : IUserRepository
     public Task SaveChangesAsync()
     {
         return _context.SaveChangesAsync();
+    }
+
+    public Task<User?> FindByEmailAsync(string email)
+    {
+        return _context.Users
+            .SingleOrDefaultAsync(u => u.Email == email);
+    }
+
+    public async Task<T> ExecuteSerializableAsync<T>(
+    Func<Task<T>> action)
+    {
+        await using var transaction =
+            await _context.Database.BeginTransactionAsync(
+                IsolationLevel.Serializable);
+
+        try
+        {
+            var result = await action();
+
+            await transaction.CommitAsync();
+
+            return result;
+        }
+        catch (Exception exception) when (
+            exception is PostgresException
+            {
+                SqlState: "40001" or "40P01"
+            }
+            || exception is DbUpdateException
+            {
+                InnerException: PostgresException
+                {
+                    SqlState: "40001" or "40P01"
+                }
+            })
+        {
+            await transaction.RollbackAsync();
+            _context.ChangeTracker.Clear();
+
+            throw new UserDataConflictException(exception);
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+            _context.ChangeTracker.Clear();
+            throw;
+        }
+    }
+
+    public Task<User?> FindByIdAsync(int id)
+    {
+        return _context.Users
+            .AsNoTracking()
+            .SingleOrDefaultAsync(u => u.Id == id);
     }
 }
